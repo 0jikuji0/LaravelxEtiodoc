@@ -78,7 +78,11 @@
             
             <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
                 <h2 class="text-lg font-semibold text-gray-800 mb-2">Informations</h2>
-                <p class="text-gray-700"><span class="font-semibold">Localisation :</span> Paris, France</p>
+                <p class="text-gray-700"><span cl<button x-show="consultation.payment_status === 'pending'" 
+                                                @click="updatePaymentStatus(consultation.id, 'paid')"
+                                                class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm transition-colors">
+                                            Marquer payé
+                                        </button>ass="font-semibold">Localisation :</span> Paris, France</p>
                 <p class="text-gray-700"><span class="font-semibold">Statut :</span> Étudiant ESGI & Développeur</p>
                 <p class="text-gray-700"><span class="font-semibold">Passion :</span> Tech, IA, et projets web</p>
             </div>
