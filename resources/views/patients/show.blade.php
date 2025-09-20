@@ -484,7 +484,8 @@
     <div class="bg-gray-50 rounded-lg border border-gray-200 p-3 overflow-hidden">
         <h5 class="text-gray-700 font-medium mb-3">Vue de face</h5>
 
-        <div class="skeleton-figure mx-auto relative" x-data="skeletonInteractive()">
+        <div class="skeleton-figure mx-auto relative w-[300px] h-[450px]" x-data="skeletonInteractive()">
+
 
             <!-- Crâne -->
             <template x-for="os in parts.crane" :key="os.name">
