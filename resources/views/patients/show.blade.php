@@ -480,6 +480,101 @@
                     </div>
                 </div>
 
+<div class="grid grid-cols-1 gap-4">
+    <div class="bg-gray-50 rounded-lg border border-gray-200 p-3 overflow-hidden">
+        <h5 class="text-gray-700 font-medium mb-3">Vue de face</h5>
+
+        <div class="skeleton-figure mx-auto relative" x-data="skeletonInteractive()">
+
+            <!-- Crâne -->
+            <template x-for="os in parts.crane" :key="os.name">
+                <img :src="os.src" :alt="os.name"
+                     @click="selectOs(os)"
+                     class="absolute cursor-pointer transition-all duration-200"
+                     :class="{'opacity-50': selectedOs === os.name}"
+                     :style="os.style">
+            </template>
+
+            <!-- Machoire -->
+            <template x-for="os in parts.machoire" :key="os.name">
+                <img :src="os.src" :alt="os.name"
+                     @click="selectOs(os)"
+                     class="absolute cursor-pointer transition-all duration-200"
+                     :class="{'opacity-50': selectedOs === os.name}"
+                     :style="os.style">
+            </template>
+
+            <!-- Clavicule -->
+            <template x-for="os in parts.clavicule" :key="os.name">
+                <img :src="os.src" :alt="os.name"
+                     @click="selectOs(os)"
+                     class="absolute cursor-pointer transition-all duration-200"
+                     :class="{'opacity-50': selectedOs === os.name}"
+                     :style="os.style">
+            </template>
+
+            <!-- Épaules -->
+            <template x-for="os in parts.epaule" :key="os.name">
+                <img :src="os.src" :alt="os.name"
+                     @click="selectOs(os)"
+                     class="absolute cursor-pointer transition-all duration-200"
+                     :class="{'opacity-50': selectedOs === os.name}"
+                     :style="os.style">
+            </template>
+
+            <!-- Bras / Humérus / Radius / Main -->
+            <template x-for="os in parts.bras" :key="os.name">
+                <img :src="os.src" :alt="os.name"
+                     @click="selectOs(os)"
+                     class="absolute cursor-pointer transition-all duration-200"
+                     :class="{'opacity-50': selectedOs === os.name}"
+                     :style="os.style">
+            </template>
+
+            <!-- Colonne -->
+            <template x-for="os in parts.colonne" :key="os.name">
+                <img :src="os.src" :alt="os.name"
+                     @click="selectOs(os)"
+                     class="absolute cursor-pointer transition-all duration-200"
+                     :class="{'opacity-50': selectedOs === os.name}"
+                     :style="os.style">
+            </template>
+
+            <!-- Côtes / Sternum -->
+            <template x-for="os in parts.cotes" :key="os.name">
+                <img :src="os.src" :alt="os.name"
+                     @click="selectOs(os)"
+                     class="absolute cursor-pointer transition-all duration-200"
+                     :class="{'opacity-50': selectedOs === os.name}"
+                     :style="os.style">
+            </template>
+
+            <!-- Bassin / Os oxal / Sacrum -->
+            <template x-for="os in parts.bassin" :key="os.name">
+                <img :src="os.src" :alt="os.name"
+                     @click="selectOs(os)"
+                     class="absolute cursor-pointer transition-all duration-200"
+                     :class="{'opacity-50': selectedOs === os.name}"
+                     :style="os.style">
+            </template>
+
+            <!-- Jambes / Tibia / Fémur / Genou / Pieds -->
+            <template x-for="os in parts.jambes" :key="os.name">
+                <img :src="os.src" :alt="os.name"
+                     @click="selectOs(os)"
+                     class="absolute cursor-pointer transition-all duration-200"
+                     :class="{'opacity-50': selectedOs === os.name}"
+                     :style="os.style">
+            </template>
+
+            <!-- Nom de l'os sélectionné -->
+            <div class="mt-3 text-center text-gray-700 font-medium absolute bottom-0 w-full" x-text="selectedOs ? 'Os sélectionné : ' + selectedOs : 'Cliquez sur un os pour voir son nom'"></div>
+
+        </div>
+    </div>
+</div>
+                
+
                 <!-- Plan de traitement -->
                 <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6" x-show="currentConsultationData.treatment_plan || isConsultationActive">
                     <h4 class="text-green-800 font-medium text-sm uppercase tracking-wide mb-3">Plan de traitement</h4>
@@ -564,6 +659,65 @@
 </div>
 
 <script>
+function skeletonInteractive() {
+    return {
+        selectedOs: null,
+        parts: {
+            crane: [{name:'Crâne', src:'/images/crane.png', style:'top:0px; left:100px; width:80px;'}],
+            machoire: [{name:'Machoire', src:'/images/machoire.png', style:'top:70px; left:110px; width:60px;'}],
+            clavicule: [
+                {name:'Clavicule D', src:'/images/clavicule_d.png', style:'top:90px; left:50px; width:60px;'},
+                {name:'Clavicule G', src:'/images/clavicule_g.png', style:'top:90px; left:150px; width:60px;'}
+            ],
+            epaule: [
+                {name:'Épaule D', src:'/images/epaule_d.png', style:'top:90px; left:30px; width:40px;'},
+                {name:'Épaule G', src:'/images/epaule_g.png', style:'top:90px; left:170px; width:40px;'}
+            ],
+            bras: [
+                {name:'Humérus D', src:'/images/humerus_d.png', style:'top:130px; left:40px; width:40px;'},
+                {name:'Humérus G', src:'/images/humerus_g.png', style:'top:130px; left:170px; width:40px;'},
+                {name:'Radius D', src:'/images/radius_d.png', style:'top:170px; left:40px; width:30px;'},
+                {name:'Radius G', src:'/images/radius_g.png', style:'top:170px; left:170px; width:30px;'},
+                {name:'Main D', src:'/images/main_d.png', style:'top:200px; left:40px; width:30px;'},
+                {name:'Main G', src:'/images/main_g.png', style:'top:200px; left:170px; width:30px;'}
+            ],
+            colonne: [
+                {name:'Colonne 1', src:'/images/colonne_1.png', style:'top:110px; left:110px; width:40px;'},
+                {name:'Colonne 2', src:'/images/colonne_2.png', style:'top:140px; left:110px; width:40px;'},
+                {name:'Colonne 3', src:'/images/colonne_3.png', style:'top:170px; left:110px; width:40px;'}
+            ],
+            cotes: [
+                {name:'Côtes D', src:'/images/cotes_d.png', style:'top:120px; left:70px; width:40px;'},
+                {name:'Côtes G', src:'/images/cotes_g.png', style:'top:120px; left:150px; width:40px;'},
+                {name:'Sternum', src:'/images/sternum.png', style:'top:120px; left:110px; width:40px;'}
+            ],
+            bassin: [
+                {name:'Os oxal B 1 D', src:'/images/os_oxal_b_1_d.png', style:'top:200px; left:60px; width:40px;'},
+                {name:'Os oxal B 1 G', src:'/images/os_oxal_b_1_g.png', style:'top:200px; left:160px; width:40px;'},
+                {name:'Os oxal B 2 D', src:'/images/os_oxal_b_2_d.png', style:'top:230px; left:60px; width:40px;'},
+                {name:'Os oxal B 2 G', src:'/images/os_oxal_b_2_g.png', style:'top:230px; left:160px; width:40px;'},
+                {name:'Os oxal H D', src:'/images/os_oxal_h_d.png', style:'top:200px; left:110px; width:40px;'},
+                {name:'Os oxal H G', src:'/images/os_oxal_h_g.png', style:'top:200px; left:110px; width:40px;'},
+                {name:'Sacrum B', src:'/images/sacrum_b.png', style:'top:260px; left:110px; width:40px;'},
+                {name:'Sacrum H', src:'/images/sacrum_h.png', style:'top:290px; left:110px; width:40px;'}
+            ],
+            jambes: [
+                {name:'Fémur D', src:'/images/femur_d.png', style:'top:300px; left:60px; width:40px;'},
+                {name:'Fémur G', src:'/images/femur_g.png', style:'top:300px; left:160px; width:40px;'},
+                {name:'Genou D', src:'/images/genou_d.png', style:'top:340px; left:60px; width:30px;'},
+                {name:'Genou G', src:'/images/genou_g.png', style:'top:340px; left:160px; width:30px;'},
+                {name:'Tibia D', src:'/images/tibia_d.png', style:'top:370px; left:60px; width:30px;'},
+                {name:'Tibia G', src:'/images/tibia_g.png', style:'top:370px; left:160px; width:30px;'},
+                {name:'Pied D', src:'/images/pied_d.png', style:'top:400px; left:60px; width:30px;'},
+                {name:'Pied G', src:'/images/pied_g.png', style:'top:400px; left:160px; width:30px;'}
+            ]
+        },
+        selectOs(os) {
+            this.selectedOs = os.name;
+        }
+    }
+}
+
 function patientProfile() {
     return {
         activeTab: 'consultations',
