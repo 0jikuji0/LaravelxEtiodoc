@@ -9,10 +9,18 @@ class AddDetailsToPatientsTable extends Migration
     public function up()
     {
         Schema::table('patients', function (Blueprint $table) {
-            $table->string('first_name')->nullable();
-            $table->string('last_name')->nullable();
-            $table->string('phone')->nullable();
-            $table->date('birthdate')->nullable();
+            if (!Schema::hasColumn('patients', 'first_name')) {
+                $table->string('first_name')->nullable();
+            }
+            if (!Schema::hasColumn('patients', 'last_name')) {
+                $table->string('last_name')->nullable();
+            }
+            if (!Schema::hasColumn('patients', 'phone')) {
+                $table->string('phone')->nullable();
+            }
+            if (!Schema::hasColumn('patients', 'birthdate')) {
+                $table->date('birthdate')->nullable();
+            }
         });
     }
 

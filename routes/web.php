@@ -7,8 +7,10 @@ use App\Models\MedicalHistory;
 use App\Models\MedicalReport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\PatientController;
 use App\Http\Controllers\ConsultationController;
+use App\Http\Controllers\ComptabiliteController;
 
 // Redirection vers login si pas connecté
 Route::get('/', function () {
@@ -25,7 +27,7 @@ Route::middleware(['auth'])->group(function () {
 
     // Dashboard - affiche la liste des patients de l'utilisateur connecté
     Route::get('/dashboard', function () {
-        $patients = Patient::where('user_id', auth()->id())
+        $patients = Patient::where('user_id', Auth::id())
                           ->latest()
                           ->get();
         return view('dashboard', compact('patients'));
@@ -47,7 +49,7 @@ Route::middleware(['auth'])->group(function () {
         ]);
 
         // Ajouter l'ID de l'utilisateur connecté
-        $validated['user_id'] = auth()->id();
+        $validated['user_id'] = Auth::id();
         
         $patient = Patient::create($validated);
         
@@ -66,7 +68,7 @@ Route::middleware(['auth'])->group(function () {
     // Voir les détails d'un patient AVEC TOUTES LES DONNÉES
     Route::get('/patients/{patient}', function (Patient $patient) {
         // Vérifier que le patient appartient à l'utilisateur connecté
-        if ($patient->user_id !== auth()->id()) {
+        if ($patient->user_id !== Auth::id()) {
             abort(403, 'Accès non autorisé à ce patient.');
         }
 
@@ -104,7 +106,7 @@ Route::middleware(['auth'])->group(function () {
     // Mettre à jour un patient (PUT/PATCH)
     Route::put('/patients/{patient}', function (Request $request, Patient $patient) {
         // Vérifier que le patient appartient à l'utilisateur connecté
-        if ($patient->user_id !== auth()->id()) {
+        if ($patient->user_id !== Auth::id()) {
             if ($request->expectsJson()) {
                 return response()->json(['error' => 'Accès non autorisé'], 403);
             }
@@ -140,7 +142,7 @@ Route::middleware(['auth'])->group(function () {
     // ✅ NOUVELLE ROUTE - Créer une consultation
     Route::post('/patients/{patient}/consultations', function (Request $request, Patient $patient) {
         // Vérifier que le patient appartient à l'utilisateur connecté
-        if ($patient->user_id !== auth()->id()) {
+        if ($patient->user_id !== Auth::id()) {
             return response()->json(['error' => 'Accès non autorisé'], 403);
         }
 
@@ -160,7 +162,7 @@ Route::middleware(['auth'])->group(function () {
 
         // Ajouter les IDs requis
         $validated['patient_id'] = $patient->id;
-        $validated['user_id'] = auth()->id();
+        $validated['user_id'] = Auth::id();
 
         $consultation = Consultation::create($validated);
 
@@ -175,7 +177,7 @@ Route::middleware(['auth'])->group(function () {
     // ✅ NOUVELLE ROUTE - Mettre à jour une consultation
     Route::put('/consultations/{consultation}', function (Request $request, Consultation $consultation) {
         // Vérifier que la consultation appartient à l'utilisateur connecté
-        if ($consultation->user_id !== auth()->id()) {
+        if ($consultation->user_id !== Auth::id()) {
             return response()->json(['error' => 'Accès non autorisé'], 403);
         }
 
@@ -205,7 +207,7 @@ Route::middleware(['auth'])->group(function () {
     // ✅ NOUVELLE ROUTE - Obtenir toutes les consultations d'un patient
     Route::get('/patients/{patient}/consultations', function (Patient $patient) {
         // Vérifier que le patient appartient à l'utilisateur connecté
-        if ($patient->user_id !== auth()->id()) {
+        if ($patient->user_id !== Auth::id()) {
             return response()->json(['error' => 'Accès non autorisé'], 403);
         }
 
@@ -222,7 +224,7 @@ Route::middleware(['auth'])->group(function () {
     // ✅ ROUTE MISE À JOUR - Sauvegarder les antécédents
     Route::post('/patients/{patient}/medical-history', function (Request $request, Patient $patient) {
         // Vérifier que le patient appartient à l'utilisateur connecté
-        if ($patient->user_id !== auth()->id()) {
+        if ($patient->user_id !== Auth::id()) {
             return response()->json(['error' => 'Accès non autorisé'], 403);
         }
 
@@ -256,7 +258,7 @@ Route::middleware(['auth'])->group(function () {
     // ✅ NOUVELLE ROUTE - Obtenir les antécédents d'un patient
     Route::get('/patients/{patient}/medical-history', function (Patient $patient) {
         // Vérifier que le patient appartient à l'utilisateur connecté
-        if ($patient->user_id !== auth()->id()) {
+        if ($patient->user_id !== Auth::id()) {
             return response()->json(['error' => 'Accès non autorisé'], 403);
         }
 
@@ -274,7 +276,7 @@ Route::middleware(['auth'])->group(function () {
     // ✅ NOUVELLE ROUTE - Supprimer une consultation
     Route::delete('/consultations/{consultation}', function (Consultation $consultation) {
         // Vérifier que la consultation appartient à l'utilisateur connecté
-        if ($consultation->user_id !== auth()->id()) {
+        if ($consultation->user_id !== Auth::id()) {
             return response()->json(['error' => 'Accès non autorisé'], 403);
         }
 
@@ -289,7 +291,7 @@ Route::middleware(['auth'])->group(function () {
     // Supprimer un patient (DELETE)
     Route::delete('/patients/{patient}', function (Patient $patient) {
         // Vérifier que le patient appartient à l'utilisateur connecté
-        if ($patient->user_id !== auth()->id()) {
+        if ($patient->user_id !== Auth::id()) {
             if (request()->expectsJson()) {
                 return response()->json(['error' => 'Accès non autorisé'], 403);
             }
@@ -312,6 +314,18 @@ Route::middleware(['auth'])->group(function () {
     Route::view('/mon-profil', 'profile.mon_profil')->name('mon-profil');
     Route::post('/consultations/{id}/mark-paid', [ConsultationController::class, 'markPaid'])
     ->name('consultations.markPaid');
+    
+    // Page de comptabilité
+    Route::get('/comptabilite', [ComptabiliteController::class, 'index'])->name('comptabilite');
+    
+    // API Comptabilité
+    Route::prefix('api/comptabilite')->group(function () {
+        Route::get('/stats', [ComptabiliteController::class, 'getStats']);
+        Route::get('/transactions', [ComptabiliteController::class, 'getTransactions']);
+        Route::get('/revenue-chart', [ComptabiliteController::class, 'getRevenueChart']);
+        Route::get('/payment-methods', [ComptabiliteController::class, 'getPaymentMethods']);
+        Route::post('/export', [ComptabiliteController::class, 'export']);
+    });
 });
 
 // Inclusion des routes d'authentification

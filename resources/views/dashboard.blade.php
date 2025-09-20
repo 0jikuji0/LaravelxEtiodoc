@@ -15,7 +15,7 @@
         <div class="text-xl font-semibold text-gray-800">Etiodoc</div>
         <nav class="flex space-x-6">
             <a href="#" @click.prevent="showForm = true" class="text-gray-700 hover:text-blue-600">Nouveau patient</a>
-            <a href="#" class="text-gray-700 hover:text-blue-600">Comptabilité</a>
+            <a href="{{ route('comptabilite') }}" class="text-gray-700 hover:text-blue-600">Comptabilité</a>
             <a href="#" class="text-gray-700 hover:text-blue-600">Contact</a>
         </nav>
     </div>

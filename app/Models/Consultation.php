@@ -25,6 +25,10 @@ class Consultation extends Model
         'status',
         'price',
         'payment_status',
+        'act_type',
+        'payment_method',
+        'payment_date',
+        'payment_notes',
         'notes'
     ];
 
@@ -32,6 +36,7 @@ class Consultation extends Model
         'consultation_date' => 'datetime',
         'next_appointment' => 'date',
         'price' => 'decimal:2',
+        'payment_date' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime'
     ];

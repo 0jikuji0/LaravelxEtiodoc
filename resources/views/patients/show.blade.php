@@ -20,7 +20,7 @@
         </div>
         <nav class="flex space-x-6">
             <a href="#" @click.prevent="showNewPatientForm = true" class="text-gray-700 hover:text-blue-600">Nouveau patient</a>
-            <a href="#" class="text-gray-700 hover:text-blue-600">Comptabilité</a>
+            <a href="{{ route('comptabilite') }}" class="text-gray-700 hover:text-blue-600">Comptabilité</a>
             <a href="#" class="text-gray-700 hover:text-blue-600">Contact</a>
         </nav>
     </div>
@@ -377,7 +377,7 @@
                                             </p>
                                         </div>
                                         <button x-show="consultation.payment_status === 'pending'" 
-                                                @click="updatePaymentStatus(consultation.id, 'paid')"
+                                                @click="openPaymentModal(consultation)"
                                                 class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm transition-colors">
                                             Marquer payé
                                         </button>
@@ -447,22 +447,7 @@
                     </div>
                 </div>
 
-                <!-- Examen médical -->
-                <div class="bg-gray-50 rounded-lg p-6 mb-6">
-                    <h4 class="text-gray-600 font-medium text-center mb-6">Examen médical</h4>
-                    
-                    <div x-show="!isConsultationActive" class="text-gray-700 whitespace-pre-line" 
-                         x-text="currentConsultationData.clinical_examination || 'Aucun examen enregistré'">
-                    </div>
-                    <div x-show="isConsultationActive" class="editable-field edit-mode">
-                        <textarea x-ref="examenMedical"
-                                  x-model="consultationData.examenMedical"
-                                  rows="8"
-                                  class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none bg-white"
-                                  placeholder="Détails de l'examen médical..."
-                        ></textarea>
-                    </div>
-                </div>
+
 
                 <!-- Diagnostic Étiopathique -->
                 <div class="bg-blue-500 text-white rounded-lg p-4 mb-6">
@@ -477,6 +462,221 @@
                                   class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-gray-800 bg-white"
                                   placeholder="Diagnostic étiopathique..."
                         ></textarea>
+                    </div>
+                </div>
+
+                <!-- Squelette et Examen médical côte à côte -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                    <!-- Squelette réaliste (SVG) -->
+                    <div class="bg-white border border-gray-200 rounded-lg p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h4 class="text-gray-800 font-semibold">Squelette réaliste</h4>
+                            <div class="text-sm text-gray-500">Cliquez pour changer la couleur (sauvegardé)</div>
+                        </div>
+
+                    @php
+                        // Supporte plusieurs chemins possibles selon orthographe (image/images) et squelette/squellete
+                        $dirs = [
+                            public_path('image/squelette'),
+                            public_path('image/squellete'),
+                            public_path('images/squelette'),
+                            public_path('images/squellete'),
+                        ];
+                        $svgs = [];
+                        $paths = [];
+                        foreach ($dirs as $dir) {
+                            if (is_dir($dir)) {
+                                foreach (scandir($dir) as $file) {
+                                    $lower = strtolower($file);
+                                    if (substr($lower, -4) === '.svg' && is_file($dir . DIRECTORY_SEPARATOR . $file)) {
+                                        $svgs[] = $file;
+                                        $paths[$file] = $dir . DIRECTORY_SEPARATOR . $file;
+                                    }
+                                }
+                            }
+                        }
+                        // Tenter d'ordonner face/dos en premier si présents
+                        usort($svgs, function($a, $b) {
+                            $order = ['front','face','anterieur','anterior','dos','back','posterieur','posterior'];
+                            $ia = 100; $ib = 100;
+                            foreach ($order as $i => $key) { if (stripos($a, $key) !== false) { $ia = $i; break; } }
+                            foreach ($order as $i => $key) { if (stripos($b, $key) !== false) { $ib = $i; break; } }
+                            if ($ia === $ib) return strcmp($a, $b);
+                            return $ia <=> $ib;
+                        });
+                    @endphp
+
+                    @if (!empty($svgs))
+                        @php
+                            // Filtrer les parties "vue de face" si mentionnées dans le nom, sinon garder tout
+                            $frontKeywords = ['front','face','anterieur','anterior'];
+                            $frontFiles = [];
+                            foreach ($svgs as $file) {
+                                $isFront = false;
+                                foreach ($frontKeywords as $kw) { if (stripos($file, $kw) !== false) { $isFront = true; break; } }
+                                if ($isFront) { $frontFiles[] = $file; }
+                            }
+                            if (empty($frontFiles)) { $frontFiles = $svgs; }
+
+                            // Catégoriser par parties: tête, torse, bras G/D, bassin, jambe G/D
+                            $parts = [
+                                'head' => [], 'torso' => [], 'arm_left' => [], 'arm_right' => [],
+                                'pelvis' => [], 'leg_left' => [], 'leg_right' => [], 'unknown' => []
+                            ];
+                            $isLeft = function($name){
+                                $leftKeys = ['gauche','left','_l','-l',' l.',' l_',' l-'];
+                                foreach ($leftKeys as $k) { if (stripos($name, $k) !== false) return true; }
+                                return false;
+                            };
+                            $isRight = function($name){
+                                $rightKeys = ['droit','droite','right','_r','-r',' r.',' r_',' r-'];
+                                foreach ($rightKeys as $k) { if (stripos($name, $k) !== false) return true; }
+                                return false;
+                            };
+                            foreach ($frontFiles as $file) {
+                                $low = strtolower($file);
+                                if (str_contains($low,'tete') || str_contains($low,'head') || str_contains($low,'crane')) {
+                                    $parts['head'][] = $file; continue;
+                                }
+                                if (str_contains($low,'thorax') || str_contains($low,'torse') || str_contains($low,'buste') || str_contains($low,'chest')) {
+                                    $parts['torso'][] = $file; continue;
+                                }
+                                if (str_contains($low,'abdomen') || str_contains($low,'ventre')) { $parts['torso'][] = $file; continue; }
+                                if (str_contains($low,'pelvis') || str_contains($low,'bassin')) { $parts['pelvis'][] = $file; continue; }
+                                if (str_contains($low,'bras') || str_contains($low,'arm')) {
+                                    if ($isLeft($low)) { $parts['arm_left'][] = $file; } elseif ($isRight($low)) { $parts['arm_right'][] = $file; } else { $parts['arm_left'][] = $file; }
+                                    continue;
+                                }
+                                if (str_contains($low,'jambe') || str_contains($low,'leg') || str_contains($low,'pied') || str_contains($low,'foot')) {
+                                    if ($isLeft($low)) { $parts['leg_left'][] = $file; } elseif ($isRight($low)) { $parts['leg_right'][] = $file; } else { $parts['leg_left'][] = $file; }
+                                    continue;
+                                }
+                                // Par défaut, on classe en "unknown" pour affichage à la fin
+                                $parts['unknown'][] = $file;
+                            }
+                            // Si on a des bras/jambes non appariés, essayer d'équilibrer
+                            if (count($parts['arm_left']) > 1 && count($parts['arm_right']) === 0) {
+                                $move = array_splice($parts['arm_left'], 1);
+                                $parts['arm_right'] = array_merge($parts['arm_right'], $move);
+                            }
+                            if (count($parts['leg_left']) > 1 && count($parts['leg_right']) === 0) {
+                                $move = array_splice($parts['leg_left'], 1);
+                                $parts['leg_right'] = array_merge($parts['leg_right'], $move);
+                            }
+                        @endphp
+
+                        <div class="grid grid-cols-1 gap-4">
+                            <div class="bg-gray-50 rounded-lg border border-gray-200 p-3 overflow-hidden">
+                                <h5 class="text-gray-700 font-medium mb-3">Vue de face</h5>
+                                <div class="skeleton-figure mx-auto">
+                                    <!-- Tête -->
+                                    <div class="flex justify-center">
+                                        <div class="skeleton-part skeleton-head">
+                                            @foreach ($parts['head'] as $file)
+                                                @php $p = $paths[$file] ?? null; @endphp
+                                                <div class="skeleton-svg skeleton-colorable" x-data="skeletonColor('{{ $patient->id }}','{{ $file }}')" @click="next()" :style="`--sk-color: ${color}`">
+                                                    {!! $p && is_readable($p) ? file_get_contents($p) : '' !!}
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+
+                                    <!-- Ligne bras / torse -->
+                                    <div class="skeleton-row mt-1">
+                                        <div class="skeleton-part skeleton-arm">
+                                            @foreach ($parts['arm_right'] as $file)
+                                                @php $p = $paths[$file] ?? null; @endphp
+                                                <div class="skeleton-svg skeleton-colorable" x-data="skeletonColor('{{ $patient->id }}','{{ $file }}')" @click="next()" :style="`--sk-color: ${color}`">
+                                                    {!! $p && is_readable($p) ? file_get_contents($p) : '' !!}
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                        <div class="skeleton-part skeleton-torso">
+                                            @foreach ($parts['torso'] as $file)
+                                                @php $p = $paths[$file] ?? null; @endphp
+                                                <div class="skeleton-svg skeleton-colorable" x-data="skeletonColor('{{ $patient->id }}','{{ $file }}')" @click="next()" :style="`--sk-color: ${color}`">
+                                                    {!! $p && is_readable($p) ? file_get_contents($p) : '' !!}
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                        <div class="skeleton-part skeleton-arm">
+                                            @foreach ($parts['arm_left'] as $file)
+                                                @php $p = $paths[$file] ?? null; @endphp
+                                                <div class="skeleton-svg skeleton-colorable" x-data="skeletonColor('{{ $patient->id }}','{{ $file }}')" @click="next()" :style="`--sk-color: ${color}`">
+                                                    {!! $p && is_readable($p) ? file_get_contents($p) : '' !!}
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+
+                                    <!-- Bassin -->
+                                    <div class="flex justify-center mt-1">
+                                        <div class="skeleton-part skeleton-pelvis">
+                                            @foreach ($parts['pelvis'] as $file)
+                                                @php $p = $paths[$file] ?? null; @endphp
+                                                <div class="skeleton-svg skeleton-colorable" x-data="skeletonColor('{{ $patient->id }}','{{ $file }}')" @click="next()" :style="`--sk-color: ${color}`">
+                                                    {!! $p && is_readable($p) ? file_get_contents($p) : '' !!}
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+
+                                    <!-- Jambes -->
+                                    <div class="flex items-start justify-center gap-2 mt-1">
+                                        <div class="skeleton-part skeleton-leg">
+                                            @foreach ($parts['leg_left'] as $file)
+                                                @php $p = $paths[$file] ?? null; @endphp
+                                                <div class="skeleton-svg skeleton-colorable" x-data="skeletonColor('{{ $patient->id }}','{{ $file }}')" @click="next()" :style="`--sk-color: ${color}`">
+                                                    {!! $p && is_readable($p) ? file_get_contents($p) : '' !!}
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                        <div class="skeleton-part skeleton-leg">
+                                            @foreach ($parts['leg_right'] as $file)
+                                                @php $p = $paths[$file] ?? null; @endphp
+                                                <div class="skeleton-svg skeleton-colorable" x-data="skeletonColor('{{ $patient->id }}','{{ $file }}')" @click="next()" :style="`--sk-color: ${color}`">
+                                                    {!! $p && is_readable($p) ? file_get_contents($p) : '' !!}
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+
+                                    @if (!empty($parts['unknown']))
+                                    <!-- Autres parties (non reconnues) -->
+                                    <div class="mt-2 space-y-2">
+                                        @foreach ($parts['unknown'] as $file)
+                                            @php $p = $paths[$file] ?? null; @endphp
+                                            <div class="skeleton-part">
+                                                <div class="skeleton-svg skeleton-colorable" x-data="skeletonColor('{{ $patient->id }}','{{ $file }}')" @click="next()" :style="`--sk-color: ${color}`">
+                                                    {!! $p && is_readable($p) ? file_get_contents($p) : '' !!}
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    @else
+                        <div class="text-gray-500 text-sm">Placez vos SVGs dans public/image/squelette (ou public/image/squellete)</div>
+                    @endif
+                    </div>
+
+                    <!-- Examen médical -->
+                    <div class="bg-gray-50 rounded-lg p-6">
+                        <h4 class="text-gray-600 font-medium text-center mb-6">Examen médical</h4>
+                        
+                        <div x-show="!isConsultationActive" class="text-gray-700 whitespace-pre-line" 
+                             x-text="currentConsultationData.clinical_examination || 'Aucun examen enregistré'">
+                        </div>
+                        <div x-show="isConsultationActive" class="editable-field edit-mode">
+                            <textarea x-ref="examenMedical"
+                                      x-model="consultationData.examenMedical"
+                                      rows="8"
+                                      class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none bg-white"
+                                      placeholder="Détails de l'examen médical...">
+                            </textarea>
+                        </div>
                     </div>
                 </div>
 
@@ -716,6 +916,8 @@ function patientProfile() {
                 status: this.currentConsultationData.status || 'normale'
             };
         },
+        
+        // Utilitaires couleur squelette (exposés pour Alpine x-data via window)
         
         // Nouvelles méthodes pour les comptes-rendus
         getSortedConsultations() {
@@ -987,6 +1189,85 @@ function patientProfile() {
                 console.log('Auto-sauvegarde en cours...');
                 // Ici vous pourriez implémenter une sauvegarde automatique des brouillons
             }
+        },
+        
+        // Modal de paiement
+        showPaymentModal: false,
+        selectedConsultation: null,
+        paymentData: {
+            amount: 0,
+            paymentMethod: '',
+            isFree: false
+        },
+        
+        openPaymentModal(consultation) {
+            this.selectedConsultation = consultation;
+            this.paymentData = {
+                amount: consultation.price || 0,
+                paymentMethod: '',
+                isFree: false
+            };
+            this.showPaymentModal = true;
+        },
+        
+        closePaymentModal() {
+            this.showPaymentModal = false;
+            this.selectedConsultation = null;
+            this.paymentData = {
+                amount: 0,
+                paymentMethod: '',
+                isFree: false
+            };
+        },
+        
+        async processPayment() {
+            if (!this.selectedConsultation) return;
+            
+            try {
+                const paymentInfo = {
+                    consultation_id: this.selectedConsultation.id,
+                    amount: this.paymentData.isFree ? 0 : this.paymentData.amount,
+                    payment_method: this.paymentData.isFree ? 'gratuit' : this.paymentData.paymentMethod,
+                    payment_status: 'paid',
+                    payment_date: new Date().toISOString().slice(0, 19).replace('T', ' ')
+                };
+                
+                const response = await fetch(`/consultations/${this.selectedConsultation.id}/mark-paid`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify(paymentInfo)
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    
+                    // Mettre à jour le statut localement
+                    this.selectedConsultation.payment_status = 'paid';
+                    this.selectedConsultation.price = paymentInfo.amount;
+                    
+                    // Fermer le modal
+                    this.closePaymentModal();
+                    
+                    // Afficher un message de succès
+                    alert('Paiement enregistré avec succès !');
+                    
+                    // Mettre à jour l'interface en rechargeant la page
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                    
+                } else {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Erreur lors de l\'enregistrement du paiement');
+                }
+                
+            } catch (error) {
+                console.error('Erreur lors du traitement du paiement:', error);
+                alert('Erreur lors du traitement du paiement: ' + error.message);
+            }
         }
     }
 }
@@ -998,6 +1279,24 @@ setInterval(() => {
         app._x_dataStack[0].autoSave();
     }
 }, 30000);
+
+// Gestion de couleur par SVG avec persistance locale par patient
+window.skeletonColor = function(patientId, svgName) {
+    const key = `patient:${patientId}:skeleton:${svgName}:color`;
+    const palette = ['#111827','#0ea5e9','#10b981','#f59e0b','#ef4444','#a855f7'];
+    const saved = localStorage.getItem(key);
+    let i = saved ? Math.max(0, palette.indexOf(saved)) : 0;
+    if (i === -1) i = 0;
+    const state = {
+        palette,
+        i,
+        get color(){ return this.palette[this.i]; },
+        next(){ this.i = (this.i + 1) % this.palette.length; localStorage.setItem(key, this.palette[this.i]); }
+    };
+    // Sauvegarde initiale si aucune valeur
+    if (!saved) localStorage.setItem(key, state.color);
+    return state;
+}
 </script>
 
 <style>
@@ -1050,7 +1349,167 @@ setInterval(() => {
 .max-h-none {
     max-height: none;
 }
+
+/* Couleur dynamique pour les SVG du squelette */
+.skeleton-colorable {
+    --sk-color: #111827;
+    transition: transform 0.2s ease, filter 0.2s ease;
+}
+.skeleton-colorable:hover {
+    filter: drop-shadow(0 2px 8px rgba(0,0,0,0.15));
+}
+.skeleton-colorable svg {
+    width: 100%;
+    height: auto;
+}
+.skeleton-colorable svg *,
+.skeleton-colorable svg path,
+.skeleton-colorable svg g {
+    stroke: var(--sk-color) !important;
+    fill: var(--sk-color) !important;
+}
+
+/* Gabarit taille squelette */
+.skeleton-part {
+    max-width: 320px;
+    margin-left: auto;
+    margin-right: auto;
+}
+@media (min-width: 768px) {
+    .skeleton-part { max-width: 380px; }
+}
+
+/* Mise en page compacte de la figure */
+.skeleton-figure { max-width: 420px; }
+@media (min-width: 768px) { .skeleton-figure { max-width: 480px; } }
+.skeleton-head svg { width: 36%; margin-left: auto; margin-right: auto; display: block; }
+.skeleton-torso { position: relative; top: -2px; transform: scale(0.72); transform-origin: top center; left: -15px; }
+.skeleton-torso svg { width: 65%; display: block; margin: 0 auto; }
+.skeleton-arm { transform: scale(3); transform-origin: top center; }
+.skeleton-arm svg { width: 100%; display: block; }
+.skeleton-pelvis { position: relative; top: -90px; }
+.skeleton-pelvis svg { width: 52%; display: block; margin: 0 auto; }
+.skeleton-leg svg { width: 85%; display: block; }
+
+/* Ligne bras/torse centrée et symétrique */
+.skeleton-row {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: start;
+    justify-items: center;
+    column-gap: 8px;
+}
 </style>
+
+<!-- Modal de paiement -->
+<div x-show="showPaymentModal" x-cloak
+     class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-md mx-4">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-bold text-gray-800">Enregistrer le paiement</h2>
+            <button @click="closePaymentModal()" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        
+        <div class="space-y-6">
+            <!-- Consultation info -->
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <h3 class="font-medium text-gray-800 mb-2">Consultation</h3>
+                <p class="text-sm text-gray-600" x-text="selectedConsultation ? 'Séance du ' + formatDate(selectedConsultation.consultation_date) : ''"></p>
+            </div>
+            
+            <!-- Option gratuit -->
+            <div class="space-y-3">
+                <label class="flex items-center space-x-3 cursor-pointer">
+                    <input type="checkbox" x-model="paymentData.isFree" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                    <span class="text-gray-700 font-medium">Acte gratuit (pas d'impact dans la comptabilité)</span>
+                </label>
+            </div>
+            
+            <!-- Tarifs pré-enregistrés -->
+            <div x-show="!paymentData.isFree" class="space-y-3">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Sélectionner un tarif</label>
+                <div class="grid grid-cols-2 gap-3">
+                    <button @click="paymentData.amount = 35" 
+                            :class="paymentData.amount === 35 ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+                            class="p-3 rounded-lg border transition-colors">
+                        35€
+                    </button>
+                    <button @click="paymentData.amount = 40" 
+                            :class="paymentData.amount === 40 ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+                            class="p-3 rounded-lg border transition-colors">
+                        40€
+                    </button>
+                    <button @click="paymentData.amount = 45" 
+                            :class="paymentData.amount === 45 ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+                            class="p-3 rounded-lg border transition-colors">
+                        45€
+                    </button>
+                    <button @click="paymentData.amount = 50" 
+                            :class="paymentData.amount === 50 ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+                            class="p-3 rounded-lg border transition-colors">
+                        50€
+                    </button>
+                </div>
+                
+                <!-- Tarif personnalisé -->
+                <div class="mt-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Ou tarif personnalisé</label>
+                    <input type="number" x-model="paymentData.amount" min="0" step="0.01"
+                           class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                           placeholder="Montant en euros">
+                </div>
+            </div>
+            
+            <!-- Méthode de paiement -->
+            <div x-show="!paymentData.isFree" class="space-y-3">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Méthode de paiement</label>
+                <div class="space-y-2">
+                    <label class="flex items-center space-x-3 cursor-pointer">
+                        <input type="radio" x-model="paymentData.paymentMethod" value="especes" class="text-blue-600 focus:ring-blue-500">
+                        <span class="text-gray-700">Espèces</span>
+                    </label>
+                    <label class="flex items-center space-x-3 cursor-pointer">
+                        <input type="radio" x-model="paymentData.paymentMethod" value="cheque" class="text-blue-600 focus:ring-blue-500">
+                        <span class="text-gray-700">Chèque</span>
+                    </label>
+                    <label class="flex items-center space-x-3 cursor-pointer">
+                        <input type="radio" x-model="paymentData.paymentMethod" value="paylib" class="text-blue-600 focus:ring-blue-500">
+                        <span class="text-gray-700">PayLib</span>
+                    </label>
+                </div>
+            </div>
+            
+            <!-- Résumé -->
+            <div x-show="!paymentData.isFree" class="bg-blue-50 p-4 rounded-lg">
+                <div class="flex justify-between items-center">
+                    <span class="font-medium text-gray-700">Total à payer:</span>
+                    <span class="text-xl font-bold text-blue-600" x-text="paymentData.amount + '€'"></span>
+                </div>
+                <div x-show="paymentData.paymentMethod" class="mt-2 text-sm text-gray-600">
+                    <span x-text="'Méthode: ' + paymentData.paymentMethod"></span>
+                </div>
+            </div>
+            
+            <!-- Boutons d'action -->
+            <div class="flex justify-end space-x-3 pt-4">
+                <button @click="closePaymentModal()" 
+                        class="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors">
+                    Annuler
+                </button>
+                <button @click="processPayment()" 
+                        :disabled="!paymentData.isFree && (!paymentData.amount || !paymentData.paymentMethod)"
+                        :class="(!paymentData.isFree && (!paymentData.amount || !paymentData.paymentMethod)) ? 'bg-gray-300 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600'"
+                        class="px-4 py-2 text-white rounded-lg transition-colors">
+                    Enregistrer le paiement
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 </body>
 </html>
