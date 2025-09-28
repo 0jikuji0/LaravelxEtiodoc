@@ -480,6 +480,9 @@
                         ></textarea>
                     </div>
                 </div>
+                <div class="flex justify-center items-start mt-10">
+    @include('squelette')
+</div>
 
 <div class="grid grid-cols-1 gap-4">
     <div class="bg-gray-50 rounded-lg border border-gray-200 p-3 overflow-hidden">
