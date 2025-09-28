@@ -11,6 +11,7 @@
 <body class="bg-gray-100 min-h-screen font-sans" x-data="patientProfile()">
 
 <!-- Header -->
+ 
 <header class="bg-white shadow-md px-6 py-4 flex justify-between items-center">
     <div class="flex items-center space-x-6">
         <div class="text-xl font-semibold text-gray-800">
@@ -659,64 +660,6 @@
 </div>
 
 <script>
-function skeletonInteractive() {
-    return {
-        selectedOs: null,
-        parts: {
-            crane: [{name:'Crâne', src:'/images/crane.png', style:'top:0px; left:100px; width:80px;'}],
-            machoire: [{name:'Machoire', src:'/images/machoire.png', style:'top:70px; left:110px; width:60px;'}],
-            clavicule: [
-                {name:'Clavicule D', src:'/images/clavicule_d.png', style:'top:90px; left:50px; width:60px;'},
-                {name:'Clavicule G', src:'/images/clavicule_g.png', style:'top:90px; left:150px; width:60px;'}
-            ],
-            epaule: [
-                {name:'Épaule D', src:'/images/epaule_d.png', style:'top:90px; left:30px; width:40px;'},
-                {name:'Épaule G', src:'/images/epaule_g.png', style:'top:90px; left:170px; width:40px;'}
-            ],
-            bras: [
-                {name:'Humérus D', src:'/images/humerus_d.png', style:'top:130px; left:40px; width:40px;'},
-                {name:'Humérus G', src:'/images/humerus_g.png', style:'top:130px; left:170px; width:40px;'},
-                {name:'Radius D', src:'/images/radius_d.png', style:'top:170px; left:40px; width:30px;'},
-                {name:'Radius G', src:'/images/radius_g.png', style:'top:170px; left:170px; width:30px;'},
-                {name:'Main D', src:'/images/main_d.png', style:'top:200px; left:40px; width:30px;'},
-                {name:'Main G', src:'/images/main_g.png', style:'top:200px; left:170px; width:30px;'}
-            ],
-            colonne: [
-                {name:'Colonne 1', src:'/images/colonne_1.png', style:'top:110px; left:110px; width:40px;'},
-                {name:'Colonne 2', src:'/images/colonne_2.png', style:'top:140px; left:110px; width:40px;'},
-                {name:'Colonne 3', src:'/images/colonne_3.png', style:'top:170px; left:110px; width:40px;'}
-            ],
-            cotes: [
-                {name:'Côtes D', src:'/images/cotes_d.png', style:'top:120px; left:70px; width:40px;'},
-                {name:'Côtes G', src:'/images/cotes_g.png', style:'top:120px; left:150px; width:40px;'},
-                {name:'Sternum', src:'/images/sternum.png', style:'top:120px; left:110px; width:40px;'}
-            ],
-            bassin: [
-                {name:'Os oxal B 1 D', src:'/images/os_oxal_b_1_d.png', style:'top:200px; left:60px; width:40px;'},
-                {name:'Os oxal B 1 G', src:'/images/os_oxal_b_1_g.png', style:'top:200px; left:160px; width:40px;'},
-                {name:'Os oxal B 2 D', src:'/images/os_oxal_b_2_d.png', style:'top:230px; left:60px; width:40px;'},
-                {name:'Os oxal B 2 G', src:'/images/os_oxal_b_2_g.png', style:'top:230px; left:160px; width:40px;'},
-                {name:'Os oxal H D', src:'/images/os_oxal_h_d.png', style:'top:200px; left:110px; width:40px;'},
-                {name:'Os oxal H G', src:'/images/os_oxal_h_g.png', style:'top:200px; left:110px; width:40px;'},
-                {name:'Sacrum B', src:'/images/sacrum_b.png', style:'top:260px; left:110px; width:40px;'},
-                {name:'Sacrum H', src:'/images/sacrum_h.png', style:'top:290px; left:110px; width:40px;'}
-            ],
-            jambes: [
-                {name:'Fémur D', src:'/images/femur_d.png', style:'top:300px; left:60px; width:40px;'},
-                {name:'Fémur G', src:'/images/femur_g.png', style:'top:300px; left:160px; width:40px;'},
-                {name:'Genou D', src:'/images/genou_d.png', style:'top:340px; left:60px; width:30px;'},
-                {name:'Genou G', src:'/images/genou_g.png', style:'top:340px; left:160px; width:30px;'},
-                {name:'Tibia D', src:'/images/tibia_d.png', style:'top:370px; left:60px; width:30px;'},
-                {name:'Tibia G', src:'/images/tibia_g.png', style:'top:370px; left:160px; width:30px;'},
-                {name:'Pied D', src:'/images/pied_d.png', style:'top:400px; left:60px; width:30px;'},
-                {name:'Pied G', src:'/images/pied_g.png', style:'top:400px; left:160px; width:30px;'}
-            ]
-        },
-        selectOs(os) {
-            this.selectedOs = os.name;
-        }
-    }
-}
 
 function patientProfile() {
     return {
