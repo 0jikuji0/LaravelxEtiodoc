@@ -308,6 +308,20 @@ Route::middleware(['auth'])->group(function () {
     })->name('patients.destroy');
 
     Route::get('/liste-patients', [PatientController::class, 'list'])->name('patients.list');
+        Route::get('/squelette', function () {
+        return view('patients.squelette');
+    })->name('squelette.show');
+
+    // Route pour afficher le squelette d'un patient spécifique (optionnel)
+    Route::get('/patients/{patient}/squelette', function (Patient $patient) {
+        // Vérifier que le patient appartient à l'utilisateur connecté
+        if ($patient->user_id !== auth()->id()) {
+            abort(403, 'Accès non autorisé à ce patient.');
+        }
+
+        return view('patients.squelette', compact('patient'));
+    })->name('patients.squelette.show');
+
 });
 
 // Inclusion des routes d'authentification
