@@ -481,7 +481,7 @@
                     </div>
                 </div>
                 <div class="flex justify-center items-start mt-10">
-    @include('squelette')
+    @include('patients.squelette')
 </div>
 
 <div class="grid grid-cols-1 gap-4">
