@@ -885,19 +885,25 @@ function patientProfile() {
         },
 
         async confirmPayment() {
+            const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
             try {
                 const amount = this.paymentForm.isFree ? 0 : Number(this.paymentForm.amount || 0);
                 const method = this.paymentForm.isFree ? null : this.paymentForm.method;
                 const consultationId = this.paymentForm.consultationId;
 
+                if (!consultationId) {
+                    throw new Error("Aucune consultation sélectionnée (ID manquant)");
+                }
+
                 // 1) Créer la facture uniquement si montant > 0 (acte payant)
                 if (amount > 0) {
                     const invoiceRes = await fetch('/accounting', {
                         method: 'POST',
+                        credentials: 'same-origin',
                         headers: {
                             'Content-Type': 'application/json',
                             'Accept': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            'X-CSRF-TOKEN': csrf
                         },
                         body: JSON.stringify({
                             patient_id: this.patientData.id,
@@ -909,18 +915,20 @@ function patientProfile() {
                         })
                     });
                     if (!invoiceRes.ok) {
-                        const txt = await invoiceRes.text();
-                        throw new Error('Création facture échouée: ' + txt);
+                        let detail = '';
+                        try { detail = (await invoiceRes.json())?.message || (await invoiceRes.text()); } catch {}
+                        throw new Error(`Création facture échouée (${invoiceRes.status}): ${detail}`);
                     }
                 }
 
                 // 2) Mettre à jour la consultation (prix + statut payé)
                 const updateRes = await fetch(`/consultations/${consultationId}`, {
                     method: 'PUT',
+                    credentials: 'same-origin',
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        'X-CSRF-TOKEN': csrf
                     },
                     body: JSON.stringify({
                         price: amount,
@@ -928,8 +936,9 @@ function patientProfile() {
                     })
                 });
                 if (!updateRes.ok) {
-                    const txt2 = await updateRes.text();
-                    throw new Error('Mise à jour consultation échouée: ' + txt2);
+                    let detail2 = '';
+                    try { detail2 = (await updateRes.json())?.message || (await updateRes.text()); } catch {}
+                    throw new Error(`Mise à jour consultation échouée (${updateRes.status}): ${detail2}`);
                 }
 
                 // Mettre à jour en local
@@ -939,7 +948,7 @@ function patientProfile() {
                 this.showPaymentModal = false;
             } catch (e) {
                 console.error(e);
-                alert('Erreur lors de la validation du paiement');
+                alert(e?.message || 'Erreur lors de la validation du paiement');
             }
         },
         

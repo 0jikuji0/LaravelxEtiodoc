@@ -7,6 +7,7 @@ use App\Models\Patient;
 use App\Models\Consultation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class AccountingController extends Controller
 {
@@ -235,9 +236,12 @@ class AccountingController extends Controller
             'patient_id' => 'required|exists:patients,id',
             'amount' => 'required|numeric', // 0 pour acte gratuit
             'invoice_date' => 'nullable|date',
-            'status' => 'required|in:pending,paid,cancelled,overdue',
-            'payment_method' => 'nullable|in:cash,cheque,paylib',
-            'consultation_id' => 'nullable|exists:consultations,id',
+            // Adapter au schéma DB (draft,sent,paid,overdue,cancelled)
+            'status' => 'required|in:draft,sent,paid,overdue,cancelled',
+            // Accept any string from the UI, we'll normaliser côté serveur
+            'payment_method' => 'nullable|string',
+            // Ne pas casser si la table consultations n'est pas migrée
+            'consultation_id' => 'nullable|integer',
             'notes' => 'nullable|string'
         ]);
 
@@ -249,10 +253,54 @@ class AccountingController extends Controller
 
         $amount = (float) $validated['amount'];
 
-        $invoice = Invoice::create([
+        // Lier la consultation si possible et cohérente
+        $consultationId = $validated['consultation_id'] ?? null;
+        if ($consultationId && Schema::hasTable('consultations')) {
+            $validConsultation = Consultation::where('id', $consultationId)
+                ->where('user_id', auth()->id())
+                ->where('patient_id', $patient->id)
+                ->exists();
+            if (! $validConsultation) {
+                $consultationId = null; // ignorer un id non valide
+            }
+        } else {
+            $consultationId = null;
+        }
+
+        // Normaliser le moyen de paiement vers les valeurs ENUM réellement présentes
+        // dans la table (cash, check, card, transfer, other)
+        $rawMethod = $validated['payment_method'] ?? null;
+        $methodForDb = null;
+        if ($rawMethod) {
+            // Nettoyage: trim, lowercase, garder alphanumériques seulement
+            $clean = preg_replace('/[^a-z0-9]/', '', strtolower(trim($rawMethod)));
+            $map = [
+                'cheque' => 'check',
+                'check'  => 'check',
+                'cash'   => 'cash',
+                'paylib' => 'card',
+                'card'   => 'card',
+                'transfer' => 'transfer',
+                'other'  => 'other'
+            ];
+            $methodForDb = $map[$clean] ?? null;
+        }
+
+        // Si on a un montant payable mais aucun mapping trouvé, utiliser 'other' pour éviter l'insert invalide
+        if ($amount > 0 && empty($methodForDb)) {
+            $methodForDb = 'other';
+        }
+
+        // Final method to persist
+        $finalMethod = $amount > 0 ? $methodForDb : null;
+
+    // Debug logs: request payload, validated and finalMethod (force error level to ensure log)
+    \Log::error('Accounting.store payload', ['request_all' => $request->all(), 'validated' => $validated, 'finalMethod' => $finalMethod]);
+        try {
+            $invoice = Invoice::create([
             'patient_id' => $patient->id,
             'user_id' => auth()->id(),
-            'consultation_id' => $validated['consultation_id'] ?? null,
+            'consultation_id' => $consultationId,
             'invoice_number' => Invoice::generateInvoiceNumber(),
             'invoice_date' => $validated['invoice_date'] ?? now()->toDateString(),
             'due_date' => null,
@@ -260,10 +308,30 @@ class AccountingController extends Controller
             'tax_amount' => 0, // Non applicable ici
             'total_amount' => $amount,
             'status' => $validated['status'],
-            'payment_method' => $validated['payment_method'] ?? null,
+            'payment_method' => $finalMethod,
             'payment_date' => $validated['status'] === 'paid' ? (now()->toDateString()) : null,
             'notes' => $validated['notes'] ?? null,
         ]);
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Log et renvoyer une erreur utile au JS pour debug
+            \Log::error('Invoice create failed', [
+                'rawMethod' => $rawMethod,
+                'methodForDb' => $methodForDb,
+                'exception' => $e->getMessage()
+            ]);
+
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Création facture échouée',
+                    'rawMethod' => $rawMethod,
+                    'methodForDb' => $methodForDb,
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+
+            abort(500, 'Création facture échouée: ' . $e->getMessage());
+        }
 
         // Si la requête provient d'AJAX (fetch), retourner JSON; sinon redirection
         if ($request->wantsJson()) {

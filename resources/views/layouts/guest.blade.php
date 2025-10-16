@@ -16,9 +16,9 @@
     </head>
     <body class="font-sans text-gray-900 antialiased">
         <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-100">
-            <div class="w-40 h-40">
+            <div class="w-32 h-32 sm:w-40 sm:h-40">
                 <a href="/">
-                    <x-application-logo class="w-40 h-40 fill-current text-gray-500" />
+                    <x-application-logo class="w-32 h-32 sm:w-40 sm:h-40 object-contain" />
                 </a>
             </div>
 
