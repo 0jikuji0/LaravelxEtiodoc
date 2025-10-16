@@ -7,7 +7,7 @@
         <nav class="flex space-x-6">
             <a id="new-patient-link" href="{{ route('dashboard') }}" class="text-gray-700 hover:text-blue-600">Nouveau patient</a>
             <a href="{{ route('accounting.index') }}" class="text-gray-700 hover:text-blue-600">Comptabilité</a>
-            <a href="#" class="text-gray-700 hover:text-blue-600">Contact</a>
+            <a href="{{ route('contacts.index') }}" class="text-gray-700 hover:text-blue-600">Contacts</a>
         </nav>
     </div>
 

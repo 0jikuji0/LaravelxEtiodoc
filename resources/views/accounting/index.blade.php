@@ -16,10 +16,7 @@
     <!-- Header row -->
     <div class="flex items-center justify-between mb-4">
       <h2 class="text-2xl font-bold">Comptabilité</h2>
-      <button id="btn-filtres" class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded-lg shadow-sm">
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 5h18M6 12h12M10 19h4"/></svg>
-        Filtres
-      </button>
+
     </div>
 
     <!-- Cards -->
@@ -101,7 +98,7 @@
             $percents = $paymentMethodPercents ?? collect();
           @endphp
           @php
-            $displayMap = ['cash'=>'Espèces','check'=>'Chèque','card'=>'Carte','transfer'=>'Virement','other'=>'Autre','cheque'=>'Chèque','paylib'=>'Paylib'];
+            $displayMap = ['cash'=>'Espèces','check'=>'Chèque','card'=>'Paylib','transfer'=>'Virement','other'=>'Autre','cheque'=>'Chèque','paylib'=>'Paylib'];
           @endphp
           @forelse($totals as $method => $total)
             @php
@@ -185,7 +182,7 @@
           <tbody class="divide-y divide-gray-100">
             @php
               $statusLabel = ['paid'=>'Payé','pending'=>'En attente','overdue'=>'En retard','cancelled'=>'Annulée'];
-              $pmLabel = ['cash'=>'Espèces','cheque'=>'Chèque','paylib'=>'Paylib','card'=>'Carte','transfer'=>'Virement','other'=>'Autre'];
+              $pmLabel = ['cash'=>'Espèces','cheque'=>'Chèque','paylib'=>'Paylib','card'=>'Paylib','transfer'=>'Virement','other'=>'Autre'];
             @endphp
             @forelse(($recentInvoices ?? []) as $inv)
               <tr>

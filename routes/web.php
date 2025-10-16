@@ -316,6 +316,12 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/accounting', [AccountingController::class, 'store'])->name('accounting.store');
     Route::get('/accounting/{invoice}', [AccountingController::class, 'show'])->name('accounting.show');
     Route::post('/accounting/{invoice}/update-status', [AccountingController::class, 'updateStatus'])->name('accounting.updateStatus');
+
+    // Contacts (liste des patients / clients)
+    Route::get('/contacts', function () {
+        $patients = App\Models\Patient::where('user_id', auth()->id())->orderBy('last_name')->get();
+        return view('contacts.index', compact('patients'));
+    })->name('contacts.index');
     
     Route::get('/squelette', function () {
         return view('patients.squelette');
