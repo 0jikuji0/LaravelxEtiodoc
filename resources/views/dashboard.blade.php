@@ -15,7 +15,7 @@
         <div class="text-xl font-semibold text-gray-800">Etiodoc</div>
         <nav class="flex space-x-6">
             <a href="#" @click.prevent="showForm = true" class="text-gray-700 hover:text-blue-600">Nouveau patient</a>
-            <a href="#" class="text-gray-700 hover:text-blue-600">Comptabilité</a>
+            <a href="{{ route('accounting.index') }}" class="text-gray-700 hover:text-blue-600">Comptabilité</a>
             <a href="#" class="text-gray-700 hover:text-blue-600">Contact</a>
         </nav>
     </div>
@@ -29,7 +29,7 @@
         </button>
         <div x-show="open" @click.away="open = false"
              class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-2 z-50" style="display:none" x-cloak>
-            <a href="{{ route('profile') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+            <a href="{{ route('profile.edit') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                 Mon compte
             </a>
             <form method="POST" action="{{ route('logout') }}">

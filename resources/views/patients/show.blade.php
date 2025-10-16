@@ -11,61 +11,7 @@
 <body class="bg-gray-100 min-h-screen font-sans" x-data="patientProfile()">
 
 <!-- Header -->
- 
-<header class="bg-white shadow-md px-6 py-4 flex justify-between items-center">
-    <div class="flex items-center space-x-6">
-        <div class="text-xl font-semibold text-gray-800">
-           <a href="{{ route('dashboard') }}">
-              Etiodoc
-          </a>
-        </div>
-        <nav class="flex space-x-6">
-            <a href="#" @click.prevent="showNewPatientForm = true" class="text-gray-700 hover:text-blue-600">Nouveau patient</a>
-            <a href="#" class="text-gray-700 hover:text-blue-600">Comptabilité</a>
-            <a href="#" class="text-gray-700 hover:text-blue-600">Contact</a>
-        </nav>
-    </div>
-
-    <div class="flex items-center space-x-4">
-        <!-- Barre de recherche -->
-        <div class="relative">
-            <input 
-                type="text" 
-                placeholder="Recherche..."
-                class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
-            >
-            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-            </div>
-        </div>
-
-        <!-- Menu utilisateur -->
-        <div x-data="{ open: false }" class="relative">
-            <button @click="open = !open" class="flex items-center text-gray-700 hover:text-blue-600 focus:outline-none">
-                <span class="mr-2">Dr. Martin</span>
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                </svg>
-            </button>
-            <div x-show="open" @click.away="open = false"
-                 class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-2 z-50" style="display:none" x-cloak>
-                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                    Mon compte
-                </a>
-                <form method="POST" action="{{ route('logout') }}">
-                @csrf
-                    <button type="submit" 
-                    class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100">
-                        Déconnexion
-                    </button>
-                </form>
-
-            </div>
-        </div>
-    </div>
-</header>
+@include('layouts.topbar')
 
 <!-- Contenu principal -->
 <div class="px-6 py-8">
@@ -378,7 +324,7 @@
                                             </p>
                                         </div>
                                         <button x-show="consultation.payment_status === 'pending'" 
-                                                @click="updatePaymentStatus(consultation.id, 'paid')"
+                                                @click="openPaymentModal(consultation.id, consultation.price)"
                                                 class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm transition-colors">
                                             Marquer payé
                                         </button>
@@ -662,6 +608,76 @@
     </div>
 </div>
 
+<!-- Modal Paiement consultation -->
+<div x-show="showPaymentModal" x-cloak class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div @click.away="showPaymentModal = false" class="bg-white w-full max-w-lg rounded-lg shadow-xl">
+        <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+            <h2 class="text-lg font-semibold text-gray-800">Valider le paiement</h2>
+            <button @click="showPaymentModal = false" class="text-gray-500 hover:text-gray-700">✕</button>
+        </div>
+        <div class="p-6 space-y-5">
+            <!-- Acte gratuit -->
+            <div class="flex items-center gap-3">
+                <input id="freeAct" type="checkbox" class="h-4 w-4 text-blue-600 border-gray-300 rounded" x-model="paymentForm.isFree">
+                <label for="freeAct" class="text-gray-800">Acte gratuit (n'impacte pas la comptabilité)</label>
+            </div>
+
+            <!-- Tarifs prédéfinis -->
+            <div :class="paymentForm.isFree ? 'opacity-50 pointer-events-none' : ''">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Tarif</label>
+                <div class="flex flex-wrap gap-2">
+                    <template x-for="t in [35,40,45,50]" :key="'tarif-'+t">
+                        <button type="button"
+                                @click="paymentForm.amount = t"
+                                :class="paymentForm.amount === t ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'"
+                                class="px-3 py-2 rounded-md text-sm">
+                            <span x-text="t + '€'"></span>
+                        </button>
+                    </template>
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm text-gray-500">ou</span>
+                        <input type="number" min="0" step="5" x-model.number="paymentForm.amount" class="w-24 border border-gray-300 rounded px-2 py-2 text-sm" :disabled="paymentForm.isFree">
+                        <span class="text-gray-600 text-sm">€</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Moyen de paiement -->
+            <div :class="paymentForm.isFree ? 'opacity-50 pointer-events-none' : ''">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Moyen de paiement</label>
+                <div class="grid grid-cols-3 gap-3">
+                    <label class="flex items-center gap-2 border rounded-md px-3 py-2 cursor-pointer hover:bg-gray-50"
+                           :class="paymentForm.method === 'cheque' ? 'border-blue-500 ring-2 ring-blue-100' : 'border-gray-300'">
+                        <input type="radio" name="paymethod" value="cheque" class="hidden" x-model="paymentForm.method">
+                        <span>Chèque</span>
+                    </label>
+                    <label class="flex items-center gap-2 border rounded-md px-3 py-2 cursor-pointer hover:bg-gray-50"
+                           :class="paymentForm.method === 'cash' ? 'border-blue-500 ring-2 ring-blue-100' : 'border-gray-300'">
+                        <input type="radio" name="paymethod" value="cash" class="hidden" x-model="paymentForm.method">
+                        <span>Espèces</span>
+                    </label>
+                    <label class="flex items-center gap-2 border rounded-md px-3 py-2 cursor-pointer hover:bg-gray-50"
+                           :class="paymentForm.method === 'paylib' ? 'border-blue-500 ring-2 ring-blue-100' : 'border-gray-300'">
+                        <input type="radio" name="paymethod" value="paylib" class="hidden" x-model="paymentForm.method">
+                        <span>Paylib</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Récap -->
+            <div class="bg-gray-50 border border-gray-200 rounded-md p-3 text-sm text-gray-700">
+                <div class="flex justify-between"><span>Montant</span><span x-text="paymentForm.isFree ? '0 €' : (paymentForm.amount || 0) + ' €'"></span></div>
+                <div class="flex justify-between"><span>Paiement</span><span x-text="paymentForm.isFree ? '-' : (paymentForm.method === 'cash' ? 'Espèces' : (paymentForm.method === 'cheque' ? 'Chèque' : 'Paylib'))"></span></div>
+            </div>
+        </div>
+        <div class="px-6 py-4 border-t border-gray-200 flex justify-end gap-2">
+            <button @click="showPaymentModal = false" class="px-4 py-2 rounded-md bg-gray-100 text-gray-800 hover:bg-gray-200">Annuler</button>
+            <button @click="confirmPayment()" class="px-4 py-2 rounded-md bg-green-600 text-white hover:bg-green-700">Confirmer</button>
+        </div>
+    </div>
+    
+</div>
+
 <script>
 
 function patientProfile() {
@@ -672,6 +688,14 @@ function patientProfile() {
         consultationStartTime: '',
         showNewPatientForm: false,
         expandedConsultations: [], // Pour gérer l'expansion des consultations dans les comptes-rendus
+        // Paiement modal
+        showPaymentModal: false,
+        paymentForm: {
+            consultationId: null,
+            amount: 45,
+            isFree: false,
+            method: 'cheque', // 'cheque' | 'cash' | 'paylib'
+        },
         
         // Données du patient depuis Laravel
         patientData: {
@@ -850,6 +874,73 @@ function patientProfile() {
                 'cancelled': 'Annulé'
             };
             return statusMap[status] || 'En attente';
+        },
+
+        openPaymentModal(id, currentPrice) {
+            this.paymentForm.consultationId = id;
+            this.paymentForm.isFree = (currentPrice || 0) === 0;
+            this.paymentForm.amount = currentPrice && currentPrice > 0 ? currentPrice : 45;
+            this.paymentForm.method = 'cheque';
+            this.showPaymentModal = true;
+        },
+
+        async confirmPayment() {
+            try {
+                const amount = this.paymentForm.isFree ? 0 : Number(this.paymentForm.amount || 0);
+                const method = this.paymentForm.isFree ? null : this.paymentForm.method;
+                const consultationId = this.paymentForm.consultationId;
+
+                // 1) Créer la facture uniquement si montant > 0 (acte payant)
+                if (amount > 0) {
+                    const invoiceRes = await fetch('/accounting', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify({
+                            patient_id: this.patientData.id,
+                            amount: amount,
+                            status: 'paid',
+                            payment_method: method,
+                            consultation_id: consultationId,
+                            notes: `Paiement consultation #${consultationId}`
+                        })
+                    });
+                    if (!invoiceRes.ok) {
+                        const txt = await invoiceRes.text();
+                        throw new Error('Création facture échouée: ' + txt);
+                    }
+                }
+
+                // 2) Mettre à jour la consultation (prix + statut payé)
+                const updateRes = await fetch(`/consultations/${consultationId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({
+                        price: amount,
+                        payment_status: 'paid'
+                    })
+                });
+                if (!updateRes.ok) {
+                    const txt2 = await updateRes.text();
+                    throw new Error('Mise à jour consultation échouée: ' + txt2);
+                }
+
+                // Mettre à jour en local
+                const c = this.allConsultations.find(c => c.id === consultationId);
+                if (c) { c.payment_status = 'paid'; c.price = amount; }
+
+                this.showPaymentModal = false;
+            } catch (e) {
+                console.error(e);
+                alert('Erreur lors de la validation du paiement');
+            }
         },
         
         getPaymentStatusColor(status) {

@@ -8,6 +8,8 @@ use App\Models\MedicalReport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PatientController;
+use App\Http\Controllers\AccountingController;
+use App\Http\Controllers\ProfileController;
 
 // Redirection vers login si pas connecté
 Route::get('/', function () {
@@ -17,10 +19,10 @@ Route::get('/', function () {
 // Routes protégées par authentification
 Route::middleware(['auth'])->group(function () {
     
-    // Page de profil utilisateur
-    Route::get('/profile', function () {
-        return view('profile');
-    })->name('profile');
+    // Routes de profil utilisateur
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // Dashboard - affiche la liste des patients de l'utilisateur connecté
     Route::get('/dashboard', function () {
@@ -308,7 +310,14 @@ Route::middleware(['auth'])->group(function () {
     })->name('patients.destroy');
 
     Route::get('/liste-patients', [PatientController::class, 'list'])->name('patients.list');
-        Route::get('/squelette', function () {
+    
+    // Routes de comptabilité
+    Route::get('/accounting', [AccountingController::class, 'index'])->name('accounting.index');
+    Route::post('/accounting', [AccountingController::class, 'store'])->name('accounting.store');
+    Route::get('/accounting/{invoice}', [AccountingController::class, 'show'])->name('accounting.show');
+    Route::post('/accounting/{invoice}/update-status', [AccountingController::class, 'updateStatus'])->name('accounting.updateStatus');
+    
+    Route::get('/squelette', function () {
         return view('patients.squelette');
     })->name('squelette.show');
 
