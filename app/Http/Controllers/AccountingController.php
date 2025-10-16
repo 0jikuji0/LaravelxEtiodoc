@@ -142,12 +142,15 @@ class AccountingController extends Controller
             ->pluck('total', 'status');
         
         // Répartition par moyen de paiement (hors actes gratuits)
+        // Utiliser le label exact si présent (payment_label) sinon la valeur enum (payment_method)
         $paymentMethodTotals = Invoice::where('user_id', $userId)
             ->where('status', 'paid')
             ->where('total_amount', '>', 0)
-            ->select('payment_method', DB::raw('SUM(total_amount) as total'))
-            ->groupBy('payment_method')
-            ->pluck('total', 'payment_method');
+            ->select(DB::raw('COALESCE(payment_label, payment_method) as method_label'), DB::raw('SUM(total_amount) as total'))
+            ->groupBy('method_label')
+            ->orderByDesc('total')
+            ->get()
+            ->pluck('total', 'method_label');
 
         $paymentTotalSum = $paymentMethodTotals->sum();
         $paymentMethodPercents = $paymentTotalSum > 0
@@ -291,8 +294,9 @@ class AccountingController extends Controller
             $methodForDb = 'other';
         }
 
-        // Final method to persist
-        $finalMethod = $amount > 0 ? $methodForDb : null;
+    // Final method to persist (enum-friendly) and label to store exact UI value
+    $finalMethod = $amount > 0 ? $methodForDb : null;
+    $finalLabel = $amount > 0 ? ($rawMethod ? trim($rawMethod) : null) : null;
 
     // Debug logs: request payload, validated and finalMethod (force error level to ensure log)
     \Log::error('Accounting.store payload', ['request_all' => $request->all(), 'validated' => $validated, 'finalMethod' => $finalMethod]);
@@ -309,6 +313,7 @@ class AccountingController extends Controller
             'total_amount' => $amount,
             'status' => $validated['status'],
             'payment_method' => $finalMethod,
+            'payment_label' => $finalLabel,
             'payment_date' => $validated['status'] === 'paid' ? (now()->toDateString()) : null,
             'notes' => $validated['notes'] ?? null,
         ]);

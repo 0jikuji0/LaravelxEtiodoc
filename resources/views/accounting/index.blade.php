@@ -100,11 +100,21 @@
             $totals = $paymentMethodTotals ?? collect();
             $percents = $paymentMethodPercents ?? collect();
           @endphp
+          @php
+            $displayMap = ['cash'=>'Espèces','check'=>'Chèque','card'=>'Carte','transfer'=>'Virement','other'=>'Autre','cheque'=>'Chèque','paylib'=>'Paylib'];
+          @endphp
           @forelse($totals as $method => $total)
-            @php $pct = $percents[$method] ?? 0; @endphp
+            @php
+              $pct = $percents[$method] ?? 0;
+              $lower = strtolower((string)$method);
+              $display = $method;
+              if (isset($displayMap[$lower])) {
+                  $display = $displayMap[$lower];
+              }
+            @endphp
             <li>
               <div class="flex items-center justify-between mb-1">
-                <span class="text-sm text-gray-700">{{ $labelMap[$method] ?? ucfirst($method) }}</span>
+                <span class="text-sm text-gray-700">{{ $display }}</span>
                 <span class="text-xs text-gray-500">{{ $pct }}%</span>
               </div>
               <div class="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
@@ -175,7 +185,7 @@
           <tbody class="divide-y divide-gray-100">
             @php
               $statusLabel = ['paid'=>'Payé','pending'=>'En attente','overdue'=>'En retard','cancelled'=>'Annulée'];
-              $pmLabel = ['cash'=>'Espèces','cheque'=>'Chèque','paylib'=>'Paylib'];
+              $pmLabel = ['cash'=>'Espèces','cheque'=>'Chèque','paylib'=>'Paylib','card'=>'Carte','transfer'=>'Virement','other'=>'Autre'];
             @endphp
             @forelse(($recentInvoices ?? []) as $inv)
               <tr>
@@ -191,7 +201,7 @@
                 </td>
                 <td class="py-2 pr-4">
                   @if(($inv->total_amount ?? 0) > 0)
-                    <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">{{ $pmLabel[$inv->payment_method] ?? ucfirst($inv->payment_method ?? '—') }}</span>
+                    <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">{{ $inv->payment_label ?? ($pmLabel[$inv->payment_method] ?? ucfirst($inv->payment_method ?? '—')) }}</span>
                   @else
                     <span class="text-gray-400">—</span>
                   @endif
